@@ -2,31 +2,33 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*.*.*"
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "docsrc/**"
+    # tags:
+    #   - "v*.*.*"
+    # paths-ignore:
+    #   - "**.md"
+    #   - "docs/**"
+    #   - "docsrc/**"
+    branches:
+      - "gardena/eb/docker_test"
 
 jobs:
-  pypi:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4.1.7
+  # pypi:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4.1.7
 
-      - name: Publish GH release
-        uses: softprops/action-gh-release@v2.0.6
-        with:
-          generate_release_notes: true
+  #     - name: Publish GH release
+  #       uses: softprops/action-gh-release@v2.0.6
+  #       with:
+  #         generate_release_notes: true
 
-      - name: Build using Poetry and publish to PyPI
-        uses: JRubics/poetry-publish@v2.0
-        with:
-          pypi_token: ${{ secrets.PYPI_API_KEY }}
+  #     - name: Build using Poetry and publish to PyPI
+  #       uses: JRubics/poetry-publish@v2.0
+  #       with:
+  #         pypi_token: ${{ secrets.PYPI_API_KEY }}
 
   docker:
-    needs: pypi
+    #needs: pypi
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -44,9 +46,9 @@ jobs:
           if [ $GITHUB_REF_TYPE = tag ]; then
             tag=$GITHUB_REF_NAME
           else
-            echo "This job is only supposed to be run for Git tags"
-            exit 1
+            tag=v0.2.3  # TODO: fail instead
           fi
+
           echo "GOOSEBIT_VERSION=${tag#v}" >> $GITHUB_ENV
 
       - name: Wait for PyPI package to become available
@@ -75,7 +77,7 @@ jobs:
         with:
           context: docker
           build-args: GOOSEBIT_VERSION=${{ env.GOOSEBIT_VERSION }}
-          push: true
+          push: false  # TODO: set to `true`
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -84,4 +86,4 @@ jobs:
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+          push-to-registry: false  # TODO: set to `true`
